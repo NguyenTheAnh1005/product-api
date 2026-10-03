@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "P1: Docker Compose",
+      "type": "shell",
+      "command": "docker compose up -d --build --wait --wait-timeout 120",
+      "problemMatcher": []
+    },
+    {
+      "label": "P1: Health",
+      "type": "shell",
+      "command": "npm run health",
+      "problemMatcher": []
+    },
+    {
+      "label": "P1: Containers",
+      "type": "shell",
+      "command": "docker ps",
+      "problemMatcher": []
+    },
+    {
+      "label": "P1: MongoDB data",
+      "type": "shell",
+      "command": "docker exec nammongodb mongosh productdb --quiet --eval 'db.products.find().toArray()'",
+      "problemMatcher": []
+    },
+    {
+      "label": "P1: API logs",
+      "type": "shell",
+      "command": "docker logs --tail 100 product-api",
+      "problemMatcher": []
+    }
+  ]
+}

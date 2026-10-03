@@ -1,0 +1,14 @@
+node_modules
+.git
+.git-sandbox-backup*
+.env
+.env.*
+.cache
+secrets
+*.pem
+*.key
+*.log
+test
+docs
+postman
+.github

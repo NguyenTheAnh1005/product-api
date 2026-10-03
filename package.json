@@ -1,0 +1,29 @@
+{
+  "name": "product-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "test": "node --test test/unit.test.js test/local-cd.test.js",
+    "test:integration": "node --test test/integration.test.js",
+    "test:http": "node scripts/http-test.js",
+    "test:smoke": "node scripts/local-smoke.js",
+    "test:node-container": "node scripts/node-container-smoke.js",
+    "test:docker": "node scripts/docker-test.js",
+    "health": "node scripts/health.js",
+    "cd:local": "node --env-file-if-exists=.env scripts/local-cd.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.10.3"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^10.4.3",
+    "supertest": "^7.3.0",
+    "yaml": "^2.9.1"
+  }
+}

@@ -1,0 +1,87 @@
+name: Product tested image and local CD
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  MONGOMS_DISABLE_POSTINSTALL: '1'
+concurrency:
+  group: product-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:integration
+      - name: Build candidate and wait for real health
+        run: docker compose up -d --build --wait --wait-timeout 120
+      - run: npm run health
+      - run: npm run test:docker
+      - name: Save the image that passed tests
+        run: docker save product-api:local -o product-api.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tested-image
+          path: product-api.tar
+          retention-days: 3
+      - name: Container evidence
+        if: always()
+        run: |
+          docker compose ps -a
+          docker compose logs --no-color
+      - name: Stop ephemeral CI stack without volume deletion
+        if: always()
+        run: docker compose down
+  publish:
+    needs: verify
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ENABLE_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    environment: dockerhub
+    outputs:
+      image: ${{ steps.publish.outputs.image }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tested-image
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - id: publish
+        env:
+          NAMESPACE: ${{ vars.DOCKERHUB_NAMESPACE }}
+        run: |
+          [[ "$NAMESPACE" =~ ^[a-z0-9][a-z0-9_-]*$ ]] || exit 1
+          IMAGE="$NAMESPACE/product-api:$GITHUB_SHA"
+          docker load -i product-api.tar
+          docker tag product-api:local "$IMAGE"
+          docker push "$IMAGE"
+          docker pull "$IMAGE"
+          DIGEST=$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')
+          echo "image=$DIGEST" >> "$GITHUB_OUTPUT"
+  deploy-local:
+    needs: publish
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ENABLE_LOCAL_DEPLOY == 'true'
+    runs-on: [self-hosted, Windows, X64, product-api-local]
+    environment: local-demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_READ_TOKEN }}
+      - name: Deploy exact tested digest and check health
+        shell: powershell
+        env:
+          DEPLOY_IMAGE: ${{ needs.publish.outputs.image }}
+        run: ./scripts/deploy-local.ps1 -Image $env:DEPLOY_IMAGE

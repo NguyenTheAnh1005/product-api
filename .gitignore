@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.cache/
+.git-sandbox-backup*/
+coverage/
+*.log
+docs/
+*.tmp
+secrets/
+*.pem
+*.key
+.DS_Store
