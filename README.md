@@ -1,84 +1,265 @@
-# Product API — Bài thực hành 1
+# Hướng dẫn chấm Bài thực hành 1 — Câu 1 đến câu 8
 
-CRUD Product (`pid`, `pname`, `price`, `quantity`) bằng Express, Mongoose và MongoDB. Phạm vi: 8 mục trang 2 của PHIEU_CHAM.pdf và Docker/CI/CD trong hướng dẫn P1.
+Bài dùng Express, Mongoose và MongoDB để CRUD sản phẩm gồm `pid`, `pname`, `price`, `quantity`. Làm lần lượt từ câu 1 đến câu 8. Câu 5 nhập request bằng tay trong Postman; các lệnh chạy trong Git Bash của VS Code.
 
-## Chạy bài
+## Chuẩn bị trước khi làm
 
-Cần Node.js 24, Git, Docker Desktop (Linux containers), VS Code và Postman. Trong Terminal Git Bash của VS Code:
+1. Mở **Docker Desktop**, chờ Docker Engine chạy xong.
+2. Mở **VS Code → File → Open Folder**, chọn thư mục bài thực hành 1 trên máy.
+3. Chọn **Terminal → New Terminal**.
+4. Nhấn mũi tên cạnh dấu **+** trong thanh Terminal → chọn **Git Bash**.
+5. Nếu máy chưa cài dependencies của project, chạy `npm ci`. Nếu đã cài thì bỏ qua.
+6. Giữ file `.env` hiện có. Chỉ khi chưa có `.env`, sao chép `.env.example` thành `.env` rồi cấu hình cho máy.
+
+Các URL dưới đây dùng **cổng mẫu 3000**. Nếu `API_PORT` trong `.env` khác, thay 3000 bằng cổng đó. Không đưa `.env` thật, mật khẩu hoặc cấu hình riêng của máy lên GitHub.
+
+## Câu 1. Kiểm tra .gitignore và .env trên GitHub
+
+**Nơi thực hiện: trình duyệt và Git Bash.**
+
+1. Mở [repository product-api](https://github.com/NguyenTheAnh1005/product-api).
+2. Nhấn file **`.gitignore`**.
+3. Chỉ dòng `.env`: Git bỏ qua file cấu hình thật này.
+4. Quay lại danh sách file: có **`.env.example`** là cấu hình mẫu; không có `.env` thật.
+5. Quay lại Git Bash trong VS Code, chạy:
 
 ```bash
-npm ci
-cp .env.example .env
-# Sửa .env cho máy của bạn; không commit file này.
+git ls-files .env
+```
+
+**Kết quả đúng:** không hiện dòng nào. `.env` thật được giữ ở máy để ứng dụng sử dụng, không được Git theo dõi.
+
+## Câu 2. Kiểm tra mã nguồn và chạy Docker Compose
+
+**Nơi thực hiện: VS Code và Git Bash.**
+
+1. Trong cây file bên trái VS Code, mở `src/` để xem mã nguồn CRUD.
+2. Mở `Dockerfile`: cấu hình đóng gói ứng dụng API.
+3. Mở `docker-compose.yaml`: cấu hình chạy MongoDB và API.
+4. Trong Git Bash, chạy:
+
+```bash
 docker compose up -d --build --wait --wait-timeout 120
 ```
 
-Nếu đã có `.env`, giữ file hiện có. `.env.example` chỉ chứa cấu hình mẫu; `.env`, log và cấu hình riêng của máy không đưa lên GitHub hoặc image. PowerShell dùng `npm.cmd` nếu `npm.ps1` bị chặn.
+5. Chờ lệnh hoàn tất; lần đầu build có thể mất vài phút.
 
-Hai container là `nammongodb` (MongoDB) và `product-api` (API), nằm trong nhóm Compose `product-api`. Volume `product-api_mongo-data` giữ dữ liệu; API kết nối Mongo qua service `mongo`.
+**Kết quả đúng:** có hai container:
 
-Để chạy Node trực tiếp từ VS Code theo hướng dẫn: `docker compose up -d mongo --wait`, rồi `npm start`. Dừng Node trước khi chạy cả stack Compose nếu dùng cùng cổng.
+- **`nammongodb`**: MongoDB lưu dữ liệu sản phẩm.
+- **`product-api`**: API xử lý request và kết nối MongoDB.
 
-## Demo đúng 8 mục chấm
+Docker Desktop gộp chúng trong nhóm Compose **product-api**. Nhấn mũi tên bên trái nhóm để thấy hai container. Volume `product-api_mongo-data` giữ dữ liệu MongoDB.
 
-| Mục | Nội dung | Thao tác khi chấm |
-|---|---|---|
-| 1 | `.gitignore` và `.env` trên GitHub | Mở `.gitignore`, `.env.example`; `git ls-files .env` phải rỗng. `.env` thật giữ local. |
-| 2 | Mã nguồn và Docker Compose | Mở `src/`, `Dockerfile`, `docker-compose.yaml`; chạy Compose ở trên. |
-| 3 | System health check | `npm run health`; `docker ps` thấy cả hai healthy. `/api/health` ping Mongo thật, trả 200 hoặc 503. |
-| 4 | CLI danh sách container | `docker ps` |
-| 5 | Postman thêm sản phẩm | Import collection; chạy `1. Health`, rồi `2. Create`: mong đợi 201. |
-| 6 | CLI dữ liệu MongoDB | Chạy lệnh Mongo bên dưới ngay sau Create, trước Delete. |
-| 7 | CLI log API | `docker logs --tail 100 product-api`: thấy POST và status 201. |
-| 8 | Test script và CI/CD | `npm test`, `npm run test:http`; mở hai workflow Actions thành công, image Hub và health sau CD local. |
+## Câu 3. System health check
 
-Postman: import `postman/product-api.postman_collection.json`, đặt biến collection `baseUrl` theo cổng API trong `.env` (mẫu `http://127.0.0.1:3000`). Create tự sinh `pid`; body trả về có đủ bốn trường. **Dừng sau Create để demo mục 6 và 7**; các request còn lại kiểm tra CRUD và cuối cùng xóa bản ghi test.
+**Nơi thực hiện: Git Bash.**
+
+1. Chạy:
+
+```bash
+npm run health
+```
+
+**Kết quả đúng:**
+
+```text
+API and MongoDB healthy
+```
+
+2. Tiếp tục chạy:
+
+```bash
+docker ps
+```
+
+3. Xem cột **STATUS**: cả hai container phải có chữ **healthy**. Nếu đang `health: starting`, chờ một chút rồi chạy lại.
+
+API có endpoint `/api/health`, ping MongoDB thật: trả 200 khi kết nối tốt và 503 khi MongoDB không sẵn sàng.
+
+Nếu đổi cổng API, chạy health bằng cổng của bạn; ví dụ với cổng mẫu:
+
+```bash
+BASE_URL=http://localhost:3000 npm run health
+```
+
+## Câu 4. CLI: kiểm tra danh sách container trong Docker Engine
+
+**Nơi thực hiện: Git Bash. CLI ở đây là dùng lệnh trong Terminal.**
+
+1. Chạy:
+
+```bash
+docker ps
+```
+
+2. Chỉ cho giảng viên hai dòng `nammongodb` và `product-api`.
+3. Giải thích bảng hiển thị image, trạng thái, cổng và tên container đang chạy.
+
+**Kết quả đúng:** cả hai container có mặt và đang chạy. Lệnh giống câu 3 nhưng câu này dùng để trình bày danh sách container.
+
+## Câu 5. Postman: gõ tay request thêm sản phẩm
+
+**Nơi thực hiện: ứng dụng Postman. Không import collection hoặc môi trường.**
+
+1. Mở **Postman → New → HTTP Request**. Có thể mở tab request mới bằng dấu **+**.
+2. Chọn phương thức **POST** ở bên trái ô URL.
+3. Gõ URL trực tiếp:
+
+```text
+http://localhost:3000/api/products
+```
+
+4. Chọn tab **Body → raw → JSON** (menu loại dữ liệu ở bên phải vùng Body).
+5. Gõ trực tiếp nội dung sau:
+
+```json
+{
+  "pid": 101,
+  "pname": "Ban phim",
+  "price": 250000,
+  "quantity": 10
+}
+```
+
+6. Nhấn **Send**.
+7. Xem status và nội dung Response ở phía dưới.
+
+**Kết quả đúng:** **201 Created**, Response có đủ bốn trường vừa nhập. Chọn Body dạng JSON để Postman gửi header `Content-Type: application/json`.
+
+Nếu nhận **409 Conflict**, pid 101 đã tồn tại: đổi thành 102 hoặc một số nguyên dương chưa dùng rồi gửi lại. Ghi nhớ pid đã tạo thành công để dùng ở câu 6.
+
+**Giữ sản phẩm này trong database đến khi hoàn thành câu 6 và câu 7. Chưa gửi DELETE.**
+
+## Câu 6. CLI: kiểm tra dữ liệu trong MongoDB container
+
+**Nơi thực hiện: quay lại Git Bash trong VS Code.**
+
+1. Nếu câu 5 tạo sản phẩm pid 101, chạy:
+
+```bash
+docker exec nammongodb mongosh productdb --quiet --eval 'db.products.find({pid:101}).toArray()'
+```
+
+2. Nếu đã dùng pid 102, thay `101` trong lệnh bằng `102`.
+3. Đối chiếu dữ liệu với Response Postman ở câu 5.
+
+**Kết quả đúng:** thấy sản phẩm có cùng pid, `pname: 'Ban phim'`, `price: 250000`, `quantity: 10`. MongoDB có thêm `_id` là bình thường.
+
+Để xem toàn bộ sản phẩm:
 
 ```bash
 docker exec nammongodb mongosh productdb --quiet --eval 'db.products.find().toArray()'
+```
+
+`productdb` là tên database mẫu. Nếu bạn đổi tên database trong URI ở `.env`, dùng tên đã cấu hình. Nếu kết quả là `[]`, kiểm tra lại pid, database và POST ở câu 5 đã nhận 201 chưa.
+
+## Câu 7. CLI: kiểm tra log product-api container
+
+**Nơi thực hiện: Git Bash.**
+
+1. Chạy:
+
+```bash
 docker logs --tail 100 product-api
 ```
 
-Nếu đổi database trong `.env`, dùng tên đó thay `productdb`. Newman kiểm tra collection qua CLI; khi chấm mục 5, thao tác trực tiếp trong Postman.
+2. Tìm dòng:
 
-## API
+```text
+POST /api/products 201
+```
 
-| Method | URL | Thành công |
-|---|---|---|
-| POST | `/api/products` | 201; body gồm pid, pname, price, quantity |
-| GET | `/api/products` | 200; danh sách |
-| GET | `/api/products/:pid` | 200; một sản phẩm |
-| PUT | `/api/products/:pid` | 200; body gồm pname, price, quantity |
-| DELETE | `/api/products/:pid` | 204 |
-| GET | `/api/health` | 200 khi Mongo hoạt động; 503 khi mất kết nối |
+**Kết quả đúng:** log thể hiện API nhận request thêm sản phẩm và xử lý thành công. Các dòng `GET /api/health 200` là những lần healthcheck, cũng bình thường.
 
-Body Create mẫu: `{"pid":101,"pname":"Ban phim","price":250.50,"quantity":10}`. pid nguyên dương, duy nhất; tên không rỗng; giá dương tối đa hai chữ số thập phân; quantity nguyên không âm. Dữ liệu sai trả 400, không tìm thấy 404, pid trùng 409.
+## Câu 8. CLI: test script và CI/CD
 
-## Test và CI/CD (mục 8)
+### A. Chạy test — trong Git Bash
+
+1. Chạy test cơ bản:
 
 ```bash
 npm test
-npm run test:integration
-npm run test:http
-npm run test:docker
 ```
 
-Unit kiểm tra API và điều kiện nhận release. Integration chạy mongod thật (lần đầu tải binary). HTTP test chạy trên API đang mở; đặt `BASE_URL` nếu đổi cổng. Docker test kiểm tra mất kết nối, phục hồi và dữ liệu qua recreate nên tạm dừng/restart stack demo. Test chỉ xóa bản ghi do chính nó tạo.
+**Kết quả đúng:** `fail 0`.
 
-Đúng hai workflow theo hướng dẫn:
-
-- `test-productci.yml`: cài dependencies và chạy unit test.
-- `test-productci-prod.yml`: unit, Mongo integration, build, Compose health, CRUD/persistence; đạt mới push đúng image đã test lên Docker Hub với tag commit SHA.
-
-GitHub variables: `ENABLE_PUBLISH=true`, `DOCKERHUB_USERNAME`, `DOCKERHUB_NAMESPACE`. Environment `dockerhub` có Secret `DOCKERHUB_TOKEN`; không ghi token vào source.
-
-Local CD dùng một cách: tiến trình theo dõi release thành công, pull image từ Hub và chạy `docker-compose-prod.yaml` không build lại:
+2. Khi API đang chạy, kiểm tra CRUD qua HTTP:
 
 ```bash
-# .env: GITHUB_REPOSITORY, DOCKERHUB_NAMESPACE, CD_POLL_SECONDS
+npm run test:http
+```
+
+**Kết quả đúng:**
+
+```text
+HTTP contract passed against running API
+```
+
+Nếu đổi cổng, dùng cổng đó, ví dụ:
+
+```bash
+BASE_URL=http://localhost:3000 npm run test:http
+```
+
+HTTP test dùng bản ghi riêng và tự xóa bản ghi test của nó.
+
+### B. Trình bày CI/CD — trên trình duyệt
+
+1. Mở [GitHub Actions](https://github.com/NguyenTheAnh1005/product-api/actions).
+2. Chỉ hai workflow theo hướng dẫn:
+   - **Product basic CI** (`test-productci.yml`): cài dependencies và chạy unit test.
+   - **Product tested image and local CD** (`test-productci-prod.yml`): test MongoDB, build Docker, kiểm tra health/CRUD/dữ liệu và publish image.
+3. Mở một lần chạy đã hoàn thành có dấu tích xanh.
+4. Trong workflow production, chỉ các job:
+   - **verify**: kiểm tra trước khi phát hành.
+   - **publish**: đẩy đúng image đã kiểm tra lên Docker Hub.
+5. Có thể mở [lần chạy thành công của bản tinh gọn](https://github.com/NguyenTheAnh1005/product-api/actions/runs/37480814961) để xem bằng chứng.
+6. Mở [Docker Hub product-api](https://hub.docker.com/r/nguyentheanh1005/product-api) để xem image.
+
+### C. CD về máy local — trong Git Bash
+
+Luồng đã cấu hình: **GitHub Actions → Docker Hub → tiến trình CD local → Docker Engine trên máy**.
+
+1. Giữ Docker Desktop chạy. Nếu tiến trình CD chưa chạy hoặc vừa khởi động lại máy, mở một Terminal **Git Bash mới** và chạy:
+
+```bash
 npm run cd:local
 ```
 
-Giữ Docker Desktop và tiến trình này chạy; sau reboot cần khởi động lại. `npm run cd:local -- --once` kiểm tra một lần. Chỉ deploy khi workflow main và job publish thành công, kiểm tra health rồi lưu trạng thái local. Compose prod dùng cùng volume Mongo; tiến trình cấp `PRODUCT_IMAGE` theo digest.
+2. Giữ Terminal này chạy; không mở thêm nếu đã có một tiến trình CD. `.env` cần có `GITHUB_REPOSITORY`, `DOCKERHUB_NAMESPACE`, `CD_POLL_SECONDS`.
+3. Tiến trình nhận workflow main có job publish thành công, pull image và chạy `docker-compose-prod.yaml`; kiểm tra health rồi mới ghi nhận deploy thành công.
+4. Khi log đã báo `Local CD healthy`, mở Terminal Git Bash khác và chạy:
 
-`docker compose stop` giữ dữ liệu; `docker compose down` giữ named volume. Không dùng `down -v` để tránh mất dữ liệu.
+```bash
+docker inspect product-api --format '{{.Config.Image}}'
+```
+
+**Kết quả đúng sau CD:** tên image bắt đầu bằng `nguyentheanh1005/product-api@sha256:`. Nếu vừa build local ở câu 2, có thể đang thấy `product-api:local`; dùng bước dưới để chạy lại image từ Hub.
+
+5. Nếu câu 2 vừa build image local và cần trình bày lại bản Hub đã kiểm tra, đợi tiến trình CD không còn deploy rồi chạy các lệnh sau trong Terminal riêng:
+
+```bash
+export PRODUCT_IMAGE=nguyentheanh1005/product-api:48dbdc942421bd99442ed4281b601d8620c8dac2
+docker compose -f docker-compose-prod.yaml pull
+docker compose -f docker-compose-prod.yaml up -d --no-build --wait --wait-timeout 120
+```
+
+Đây là tag của bản tinh gọn đã chạy CI/CD thành công. Bước này chạy lại image Hub bằng Compose prod, giữ nguyên volume MongoDB. Khi dùng tag, `docker inspect` hiển thị tên image kèm tag thay vì digest; cả hai đều là image Hub.
+
+6. Kiểm tra lại:
+
+```bash
+docker inspect product-api --format '{{.Config.Image}}'
+npm run health
+docker ps
+```
+
+**Kết quả đúng:** dùng image Hub theo tag hoặc digest, API/Mongo healthy và cả hai container đang chạy.
+
+## Lưu ý khi kết thúc
+
+- `.env` thật giữ ở máy, không upload lên GitHub.
+- Giữ bản ghi nhập tay ở câu 5 để trình bày câu 6 và 7.
+- `docker compose stop` dừng container và giữ dữ liệu.
+- Không dùng `docker compose down -v` vì sẽ xóa volume dữ liệu MongoDB.
