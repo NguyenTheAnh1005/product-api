@@ -11,8 +11,6 @@
     "test": "node --test test/unit.test.js test/local-cd.test.js",
     "test:integration": "node --test test/integration.test.js",
     "test:http": "node scripts/http-test.js",
-    "test:smoke": "node scripts/local-smoke.js",
-    "test:node-container": "node scripts/node-container-smoke.js",
     "test:docker": "node scripts/docker-test.js",
     "health": "node scripts/health.js",
     "cd:local": "node --env-file-if-exists=.env scripts/local-cd.js"

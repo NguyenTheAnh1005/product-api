@@ -47,8 +47,6 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ENABLE_PUBLISH == 'true'
     runs-on: ubuntu-latest
     environment: dockerhub
-    outputs:
-      image: ${{ steps.publish.outputs.image }}
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -68,20 +66,4 @@ jobs:
           docker push "$IMAGE"
           docker pull "$IMAGE"
           DIGEST=$(docker image inspect "$IMAGE" --format '{{index .RepoDigests 0}}')
-          echo "image=$DIGEST" >> "$GITHUB_OUTPUT"
-  deploy-local:
-    needs: publish
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.ENABLE_LOCAL_DEPLOY == 'true'
-    runs-on: [self-hosted, Windows, X64, product-api-local]
-    environment: local-demo
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_READ_TOKEN }}
-      - name: Deploy exact tested digest and check health
-        shell: powershell
-        env:
-          DEPLOY_IMAGE: ${{ needs.publish.outputs.image }}
-        run: ./scripts/deploy-local.ps1 -Image $env:DEPLOY_IMAGE
+          echo "Published image: $DIGEST"
