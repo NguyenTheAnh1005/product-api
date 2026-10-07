@@ -1,0 +1,13 @@
+# Use this workspace to collaborate
+workspace:
+  id: 7d6c7c22-6960-42fc-812d-d60bb62c56c1
+
+localResources:
+  collections:
+    - ../product-api.postman_collection.json
+    - ../product-api P1
+    - ../product-api P1-1
+    - ../product-api P1-2
+    - ../product-api P1-3
+    - ../product-api P1-4
+    - ../product-api P1-5
