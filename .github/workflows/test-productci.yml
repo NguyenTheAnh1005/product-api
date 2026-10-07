@@ -1,4 +1,4 @@
-name: Product basic CI demo
+name: Product basic CI
 on:
   push:
   pull_request:
